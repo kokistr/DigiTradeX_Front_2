@@ -1,0 +1,323 @@
+/* POList.css */
+
+/* 全体のコンテナ */
+.po-list-container {
+    font-family: 'Helvetica Neue', Arial, sans-serif;
+    width: 100%;
+    min-height: 100vh;
+    background-color: #f5f7fa;
+    display: flex;
+    flex-direction: column;
+  }
+  
+  /* ナビゲーションヘッダー */
+  .nav-header {
+    background-color: #4a69bd;
+    color: white;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 0 20px;
+    height: 60px;
+    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+  }
+  
+  .app-logo {
+    font-size: 24px;
+    font-weight: bold;
+  }
+  
+  .nav-buttons {
+    display: flex;
+  }
+  
+  .nav-button {
+    background: none;
+    border: none;
+    color: white;
+    padding: 0 20px;
+    height: 60px;
+    font-size: 16px;
+    cursor: pointer;
+    transition: background-color 0.3s;
+  }
+  
+  .nav-button:hover {
+    background-color: rgba(255, 255, 255, 0.1);
+  }
+  
+  .nav-button.active {
+    background-color: #8395e1;
+  }
+  
+  /* メインコンテンツ */
+  .main-content {
+    flex: 1;
+    padding: 20px;
+    max-width: 1400px;
+    margin: 0 auto;
+    width: 100%;
+  }
+  
+  /* リストヘッダー */
+  .list-header {
+    display: flex;
+    align-items: center;
+    margin-bottom: 20px;
+    background-color: #e3f2fd;
+    padding: 12px 16px;
+    border-radius: 4px;
+  }
+  
+  .list-title {
+    margin: 0;
+    font-size: 18px;
+    font-weight: 500;
+  }
+  
+  /* エラーメッセージ */
+  .error-message {
+    padding: 12px 16px;
+    border-radius: 4px;
+    margin-bottom: 20px;
+    font-size: 14px;
+    background-color: #ffebee;
+    color: #d32f2f;
+    border: 1px solid #ffcdd2;
+  }
+  
+  /* フィルターセクション */
+  .filter-section {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 16px;
+    background-color: white;
+    padding: 16px;
+    border-radius: 4px;
+    box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+    margin-bottom: 20px;
+  }
+  
+  .filter-item {
+    display: flex;
+    flex-direction: column;
+  }
+  
+  .filter-label {
+    font-size: 14px;
+    color: #616161;
+    margin-bottom: 4px;
+  }
+  
+  .filter-input {
+    padding: 8px 12px;
+    border: 1px solid #e0e0e0;
+    border-radius: 4px;
+    font-size: 14px;
+    min-width: 200px;
+  }
+  
+  .filter-button {
+    background-color: #4a69bd;
+    color: white;
+    border: none;
+    border-radius: 4px;
+    padding: 8px 16px;
+    cursor: pointer;
+    font-size: 14px;
+    margin-top: 22px;
+    height: 38px;
+    transition: background-color 0.3s;
+  }
+  
+  .filter-button:hover {
+    background-color: #3a5795;
+  }
+  
+  /* テーブルコンテナ */
+  .table-container {
+    background-color: white;
+    border-radius: 4px;
+    box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+    margin-bottom: 20px;
+    min-height: 300px;
+    position: relative;
+  }
+  
+  /* ローディング表示 */
+  .loading-indicator {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    height: 300px;
+  }
+  
+  .loading-spinner {
+    width: 40px;
+    height: 40px;
+    border: 4px solid rgba(74, 105, 189, 0.3);
+    border-top: 4px solid #4a69bd;
+    border-radius: 50%;
+    animation: spin 1s linear infinite;
+    margin-bottom: 16px;
+  }
+  
+  @keyframes spin {
+    0% { transform: rotate(0deg); }
+    100% { transform: rotate(360deg); }
+  }
+  
+  /* データなし表示 */
+  .no-data-message {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    height: 300px;
+    color: #9e9e9e;
+    font-size: 16px;
+  }
+  
+  /* テーブル表示 */
+  .table-responsive {
+    overflow-x: auto;
+    padding: 8px;
+  }
+  
+  .po-table {
+    width: 100%;
+    border-collapse: collapse;
+    white-space: nowrap;
+    font-size: 14px;
+  }
+  
+  .po-table th, 
+  .po-table td {
+    padding: 12px 16px;
+    border-bottom: 1px solid #e0e0e0;
+    text-align: left;
+  }
+  
+  .po-table th {
+    background-color: #f5f5f5;
+    font-weight: 500;
+    color: #616161;
+    position: sticky;
+    top: 0;
+    cursor: pointer;
+    transition: background-color 0.3s;
+  }
+  
+  .po-table th:hover {
+    background-color: #e0e0e0;
+  }
+  
+  .po-table th.sorted-asc,
+  .po-table th.sorted-desc {
+    background-color: #e3f2fd;
+    color: #4a69bd;
+  }
+  
+  .sort-icon {
+    display: inline-block;
+    margin-left: 4px;
+    font-size: 12px;
+  }
+  
+  .po-table tbody tr {
+    transition: background-color 0.3s;
+  }
+  
+  .po-table tbody tr:hover {
+    background-color: #f9f9f9;
+  }
+  
+  .po-table tbody tr.bg-red {
+    background-color: #ffebee;
+  }
+  
+  .po-table tbody tr.bg-blue {
+    background-color: #e3f2fd;
+  }
+  
+  .po-table tbody tr.bg-gray {
+    background-color: #f5f5f5;
+  }
+  
+  .po-table td {
+    cursor: pointer;
+  }
+  
+  .memo-input, 
+  .status-select {
+    width: 100%;
+    padding: 4px 8px;
+    border: 1px solid #e0e0e0;
+    border-radius: 4px;
+    font-size: 14px;
+  }
+  
+  .memo-input:focus, 
+  .status-select:focus {
+    outline: none;
+    border-color: #4a69bd;
+  }
+  
+  /* ページネーション */
+  .pagination {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    margin-top: 20px;
+  }
+  
+  .pagination-button {
+    background-color: #f5f5f5;
+    border: 1px solid #e0e0e0;
+    border-radius: 4px;
+    padding: 6px 12px;
+    margin: 0 4px;
+    cursor: pointer;
+    transition: all 0.3s;
+  }
+  
+  .pagination-button:hover:not(:disabled) {
+    background-color: #e0e0e0;
+  }
+  
+  .pagination-button:disabled {
+    opacity: 0.5;
+    cursor: not-allowed;
+  }
+  
+  .pagination-info {
+    margin: 0 16px;
+    font-size: 14px;
+    color: #616161;
+  }
+  
+  /* レスポンシブ対応 */
+  @media (max-width: 768px) {
+    .filter-section {
+      flex-direction: column;
+      gap: 12px;
+    }
+    
+    .filter-item {
+      width: 100%;
+    }
+    
+    .filter-input {
+      width: 100%;
+      min-width: auto;
+    }
+    
+    .filter-button {
+      width: 100%;
+      margin-top: 4px;
+    }
+    
+    .pagination {
+      flex-wrap: wrap;
+    }
+  }

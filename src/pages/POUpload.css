@@ -1,0 +1,365 @@
+/* src/pages/POUpload.css */
+.po-upload-container {
+  display: flex;
+  flex-direction: column;
+  height: 100vh;
+  overflow: hidden;
+}
+
+.main-content {
+  flex: 1;
+  padding: 1rem;
+  background-color: #f5f5f5;
+  overflow-y: auto;
+}
+
+.two-column-layout {
+  display: flex;
+  gap: 1rem;
+  height: calc(100vh - 120px); /* ナビゲーションバーとパディングを考慮した高さ */
+}
+
+.info-panel, .image-panel {
+  flex: 1;
+  background-color: #fff;
+  border-radius: 4px;
+  overflow: hidden;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+  display: flex;
+  flex-direction: column;
+}
+
+.info-header, .image-header {
+  background-color: #e6efff;
+  padding: 0.8rem 1rem;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  z-index: 1;
+}
+
+.info-title, .image-title {
+  font-size: 1.1rem;
+  font-weight: 500;
+}
+
+.button-group {
+  display: flex;
+  gap: 0.5rem;
+}
+
+.action-button {
+  padding: 0.5rem 1rem;
+  background-color: #ccc;
+  color: #333;
+  border: none;
+  border-radius: 4px;
+  cursor: pointer;
+}
+
+.action-button.active {
+  background-color: #304ffe;
+  color: white;
+}
+
+.action-button:disabled {
+  background-color: #ccc;
+  color: #666;
+  cursor: not-allowed;
+}
+
+.info-body {
+  padding: 1rem;
+  flex: 1;
+  overflow-y: auto;
+}
+
+.image-body {
+  padding: 1rem;
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+}
+
+.info-row {
+  display: flex;
+  margin-bottom: 0.7rem;
+}
+
+.info-label {
+  width: 100px;
+  background-color: #f0f0f0;
+  padding: 0.5rem;
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+  border: 1px solid #ddd;
+  border-right: none;
+  font-weight: 500;
+}
+
+.info-input {
+  flex: 1;
+  padding: 0.5rem;
+  border: 1px solid #ddd;
+}
+
+.product-info-section {
+  margin: 1rem 0;
+}
+
+.product-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 0.5rem;
+}
+
+.add-product-button {
+  background-color: #304ffe; /* 青色に変更 */
+  color: white;
+  border: none;
+  border-radius: 4px;
+  padding: 0.3rem 0.8rem;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  gap: 0.3rem;
+  font-size: 0.9rem;
+}
+
+.product-item {
+  margin-bottom: 1rem;
+  border: 1px solid #eee;
+  border-radius: 4px;
+  padding: 0.5rem;
+}
+
+.product-number-row {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 0.5rem;
+}
+
+.product-number {
+  font-weight: 500;
+}
+
+.remove-product-button {
+  background-color: #f44336;
+  color: white;
+  border: none;
+  border-radius: 4px;
+  padding: 0.2rem 0.5rem;
+  cursor: pointer;
+  font-size: 0.8rem;
+}
+
+.total-row {
+  font-weight: bold;
+}
+
+.total-amount {
+  background-color: #f8f8f8;
+  font-weight: bold;
+}
+
+.upload-area {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  height: 100%;
+  border: 2px dashed #ccc;
+  border-radius: 4px;
+  padding: 1rem;
+  text-align: center;
+  flex: 1;
+}
+
+.upload-main-text {
+  font-size: 1.2rem;
+  margin-bottom: 0.3rem;
+}
+
+.upload-sub-text {
+  color: #666;
+  margin-bottom: 2rem;
+}
+
+.upload-instruction {
+  margin-bottom: 0.5rem;
+  color: #666;
+}
+
+.upload-or {
+  margin: 1rem 0;
+  color: #999;
+}
+
+.file-select-button {
+  background-color: #304ffe;
+  color: white;
+  border: none;
+  border-radius: 4px;
+  padding: 0.5rem 1.5rem;
+  cursor: pointer;
+}
+
+.file-input-hidden {
+  display: none;
+}
+
+.processing-area {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  height: 100%;
+  flex: 1;
+}
+
+.processing-text {
+  margin-bottom: 1.5rem;
+  font-size: 1.1rem;
+  color: #666;
+}
+
+.spinner {
+  width: 40px;
+  height: 40px;
+  border: 4px solid #f3f3f3;
+  border-top: 4px solid #304ffe;
+  border-radius: 50%;
+  animation: spin 1s linear infinite;
+}
+
+@keyframes spin {
+  0% { transform: rotate(0deg); }
+  100% { transform: rotate(360deg); }
+}
+
+.preview-area {
+  display: flex;
+  flex-direction: column;
+  height: 100%;
+  flex: 1;
+}
+
+.preview-image {
+  max-width: 100%;
+  height: auto;
+  max-height: 100%;
+  object-fit: contain;
+  flex: 1;
+}
+
+.preview-pdf {
+  display: flex;
+  flex-direction: column;
+  height: 100%;
+  flex: 1;
+}
+
+.preview-filename {
+  margin-bottom: 0.5rem;
+  font-size: 0.9rem;
+  color: #666;
+}
+
+.pdf-object {
+  flex: 1;
+  width: 100%;
+  height: 100%;
+  border: 1px solid #ddd;
+}
+
+.error-message {
+  background-color: #ffebee;
+  color: #c62828;
+  padding: 0.8rem;
+  border-radius: 4px;
+  margin-bottom: 1rem;
+  border-left: 4px solid #f44336;
+}
+
+.success-message {
+  background-color: #e8f5e9;
+  color: #2e7d32;
+  padding: 0.8rem;
+  border-radius: 4px;
+  margin-bottom: 1rem;
+  border-left: 4px solid #4caf50;
+}
+
+/* オーバーレイとダイアログのスタイル - 修正 */
+.overlay {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background-color: rgba(0, 0, 0, 0.5);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 1000;
+}
+
+.dialog {
+  background-color: white;
+  border-radius: 8px;
+  padding: 1.5rem;
+  width: 90%;
+  max-width: 500px;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+}
+
+.dialog-title {
+  margin-top: 0;
+  margin-bottom: 1.5rem;
+  font-size: 1.2rem;
+  text-align: center;
+}
+
+.dialog-buttons {
+  display: flex;
+  justify-content: center;
+  gap: 1rem;
+}
+
+/* ダイアログボタンのスタイル - 修正 */
+.dialog-button-cancel {
+  padding: 0.6rem 1.5rem;
+  background-color: #ffffff;
+  color: #333;
+  border: 1px solid #ddd;
+  border-radius: 4px;
+  cursor: pointer;
+}
+
+.dialog-button-confirm {
+  padding: 0.6rem 1.5rem;
+  background-color: #304ffe;
+  color: white;
+  border: none;
+  border-radius: 4px;
+  cursor: pointer;
+}
+
+/* レスポンシブ対応 */
+@media (max-width: 768px) {
+  .two-column-layout {
+    flex-direction: column;
+    height: auto;
+  }
+  
+  .info-panel, .image-panel {
+    height: auto;
+  }
+  
+  .image-body {
+    height: 400px; /* モバイル表示時の高さ */
+  }
+}
