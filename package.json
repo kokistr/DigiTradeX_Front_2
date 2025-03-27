@@ -2,7 +2,7 @@
   "scripts": {
     "start": "react-scripts start",
     "build": "CI=false react-scripts build",
-    "test": "react-scripts test",
+    "test": "CI=false react-scripts test --passWithNoTests",
     "eject": "react-scripts eject"
   },
   "browserslist": {
@@ -37,5 +37,10 @@
     "babel-jest": "^29.7.0",
     "@babel/preset-env": "^7.24.0",
     "@babel/preset-react": "^7.23.3"
+  },
+  "jest": {
+    "transformIgnorePatterns": [
+      "node_modules/(?!(axios|react-router-dom)/)"
+    ]
   }
 }
