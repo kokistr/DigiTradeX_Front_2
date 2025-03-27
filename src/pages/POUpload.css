@@ -58,7 +58,7 @@
 }
 
 .action-button.active {
-  background-color: #304ffe;
+  background-color: #1839f5;
   color: white;
 }
 
@@ -116,7 +116,7 @@
 }
 
 .add-product-button {
-  background-color: #304ffe; /* 青色に変更 */
+  background-color: #1e3ce7; /* 青色に変更 */
   color: white;
   border: none;
   border-radius: 4px;
@@ -199,7 +199,7 @@
 }
 
 .file-select-button {
-  background-color: #304ffe;
+  background-color: #1e3ce7;;
   color: white;
   border: none;
   border-radius: 4px;
@@ -230,7 +230,7 @@
   width: 40px;
   height: 40px;
   border: 4px solid #f3f3f3;
-  border-top: 4px solid #304ffe;
+  border-top: 4px solid #1e3ce7;;
   border-radius: 50%;
   animation: spin 1s linear infinite;
 }
@@ -341,7 +341,7 @@
 
 .dialog-button-confirm {
   padding: 0.6rem 1.5rem;
-  background-color: #304ffe;
+  background-color: #1e3ce7;;
   color: white;
   border: none;
   border-radius: 4px;
