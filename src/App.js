@@ -4,25 +4,43 @@ import { BrowserRouter as Router, Routes, Route, Navigate } from 'react-router-d
 import POUpload from './pages/POUpload';
 import POList from './pages/POList';
 import Booking from './pages/Booking';
+import Login from './pages/Login';
 import Layout from './components/Layout';
 import './App.css';
 
 function App() {
+  // ユーザー認証状態をチェック
+  const isAuthenticated = () => {
+    const token = localStorage.getItem('token');
+    return !!token; // トークンが存在すればtrue、なければfalse
+  };
+
+  // 認証が必要なルートのラッパー
+  const ProtectedRoute = ({ children }) => {
+    if (!isAuthenticated()) {
+      return <Navigate to="/login" />;
+    }
+    return <Layout>{children}</Layout>;
+  };
+
   return (
     <Router>
       <Routes>
+        {/* 認証ページ */}
+        <Route path="/login" element={<Login />} />
+        
         {/* メインページ */}
         <Route path="/" element={
-          <Layout>
+          <ProtectedRoute>
             <POUpload />
-          </Layout>
+          </ProtectedRoute>
         } />
         
         {/* PO一覧ページ */}
         <Route path="/po/list" element={
-          <Layout>
+          <ProtectedRoute>
             <POList />
-          </Layout>
+          </ProtectedRoute>
         } />
         
         {/* 旧パスでのアクセス対応（後方互換性） */}
@@ -30,9 +48,9 @@ function App() {
         
         {/* ブッキングページ */}
         <Route path="/booking" element={
-          <Layout>
+          <ProtectedRoute>
             <Booking />
-          </Layout>
+          </ProtectedRoute>
         } />
         
         {/* 存在しないパスへのアクセス */}
