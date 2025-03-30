@@ -580,7 +580,7 @@ const POUpload = () => {
       ],
 
       // Inputテーブルのフィールド - UI表示はしないが保持
-      shipment_arrangement: '手配中',
+      shipment_arrangement: '手配前',
       po_acquisition_date: new Date().toISOString().split('T')[0],
       organization: '',
       invoice_number: '',
