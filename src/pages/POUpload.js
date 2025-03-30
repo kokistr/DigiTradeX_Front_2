@@ -16,12 +16,12 @@ const POUpload = () => {
     // PurchaseOrdersテーブルのフィールド
     customer_name: '',
     po_number: '',
-    currency: 'USD',  // デフォルト値を設定
+    currency: '', 
     total_amount: '0.00',
     payment_terms: '',
     shipping_terms: '',
     destination: '',
-    status: 'pending',
+    status: '',
 
     // 製品情報の配列（複数製品に対応）
     products: [
