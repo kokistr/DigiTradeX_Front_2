@@ -8,6 +8,7 @@ const POList = () => {
   const navigate = useNavigate();
   
   const [poList, setPOList] = useState([]);
+  const [expandedProductsList, setExpandedProductsList] = useState([]); // 展開された製品一覧
   const [originalData, setOriginalData] = useState([]); // 元のデータを保存
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState('');
@@ -52,13 +53,50 @@ const POList = () => {
       console.log('PO一覧データのレスポンス:', response.data);
       
       if (response.data && response.data.success && Array.isArray(response.data.data)) {
-        console.log('取得したPOリスト:', response.data.data);
-        const data = response.data.data;
-        setPOList(data);
-        setOriginalData(data); // 元のデータを保存
-        setCurrentPage(1); // データ取得時にページを1に戻す
-        // 選択状態をリセット
-        setSelectedItems({});
+        // 製品ごとに行を作成するための処理を追加
+        const expandedList = [];
+        
+        response.data.data.forEach(po => {
+          // 製品情報を取得するためにAPIを呼び出す
+          fetchProductDetails(po.id, token).then(products => {
+            if (products.length === 0) {
+              // 製品情報がない場合は1行だけ表示
+              expandedList.push({
+                ...po,
+                isMainRow: true,  // メイン行フラグ
+                productDetail: null // 製品詳細なし
+              });
+            } else {
+              // 製品ごとに行を作成
+              products.forEach((product, index) => {
+                expandedList.push({
+                  ...po,
+                  isMainRow: index === 0,  // 最初の製品のみメイン行
+                  productDetail: product,
+                  // 製品詳細情報で上書き
+                  productName: product.product_name,
+                  quantity: product.quantity,
+                  unitPrice: product.unit_price,
+                  amount: product.subtotal
+                });
+              });
+            }
+            
+            // 状態を更新
+            setExpandedProductsList(expandedList);
+            setPOList(expandedList);
+            setOriginalData(expandedList);
+            setCurrentPage(1);
+            setIsLoading(false);
+          }).catch(err => {
+            console.error('製品情報取得エラー:', err);
+            setError('製品情報の取得に失敗しました');
+            setIsLoading(false);
+          });
+        });
+        
+        // データをそのまま保存（バックアップ用）
+        setOriginalData(response.data.data);
       } else {
         console.error('不正なレスポンス形式:', response.data);
         throw new Error('サーバーから正しいデータ形式が返されませんでした');
@@ -66,8 +104,48 @@ const POList = () => {
     } catch (error) {
       console.error('List fetch error:', error);
       setError('PO一覧の取得に失敗しました: ' + (error.response?.data?.detail || error.message));
-    } finally {
       setIsLoading(false);
+    }
+  };
+  
+  // 製品詳細情報を取得する関数
+  const fetchProductDetails = async (poId, token) => {
+    try {
+      const response = await axios.get(`${API_URL}/api/po/${poId}/products`, {
+        headers: {
+          'Authorization': `Bearer ${token}`,
+          'Accept': 'application/json'
+        }
+      });
+      
+      if (response.data && response.data.success && Array.isArray(response.data.products)) {
+        return response.data.products;
+      }
+      
+      // API未実装の場合のモック対応
+      // 実際の実装ではこの部分は削除し、バックエンドAPIを実装すること
+      console.warn('製品詳細APIが未実装のため、モックデータを使用します');
+      // POの製品名をカンマで分割して簡易的に製品リストを作成
+      if (originalData && originalData.length > 0) {
+        const po = originalData.find(p => p.id === poId);
+        if (po && po.productName) {
+          const productNames = po.productName.split(', ');
+          return productNames.map((name, index) => ({
+            id: index + 1,
+            po_id: poId,
+            product_name: name,
+            quantity: po.quantity ? (po.quantity / productNames.length).toString() : "0",
+            unit_price: po.unitPrice || "0",
+            subtotal: po.amount ? (po.amount / productNames.length).toString() : "0"
+          }));
+        }
+      }
+      
+      return [];
+    } catch (error) {
+      console.error('製品詳細取得エラー:', error);
+      // モックデータを返す（実際の実装では適切なエラーハンドリングを行うこと）
+      return [];
     }
   };
   
@@ -114,16 +192,17 @@ const POList = () => {
         }
       );
       
-      // 状態を更新
+      // 状態を更新 - 同じPO IDを持つすべての行を更新
       const updatedList = poList.map(po => 
         po.id === id ? { ...po, status: newStatus } : po
       );
       setPOList(updatedList);
       
       // 元のデータも更新
-      setOriginalData(originalData.map(po => 
+      setExpandedProductsList(expandedProductsList.map(po => 
         po.id === id ? { ...po, status: newStatus } : po
       ));
+      
     } catch (error) {
       console.error('Status update error:', error);
       setError('出荷手配更新に失敗しました: ' + (error.response?.data?.detail || error.message));
@@ -156,7 +235,7 @@ const POList = () => {
       manager: '',
       organization: ''
     });
-    setPOList(originalData);
+    setPOList(expandedProductsList);
     setCurrentPage(1); // ページを1に戻す
   };
   
@@ -167,7 +246,7 @@ const POList = () => {
     console.log('ローカルフィルタリング適用:', filters);
     
     // フィルタリング条件に基づいてデータをフィルタリング
-    const filteredData = originalData.filter(po => {
+    const filteredData = expandedProductsList.filter(po => {
       // 出荷手配フィルター
       if (filters.status && po.status !== filters.status) {
         return false;
@@ -226,16 +305,17 @@ const POList = () => {
         }
       );
       
-      // 状態を更新
+      // 状態を更新 - 同じPO IDを持つすべての行を更新
       const updatedList = poList.map(po => 
         po.id === id ? { ...po, memo } : po
       );
       setPOList(updatedList);
       
       // 元のデータも更新
-      setOriginalData(originalData.map(po => 
+      setExpandedProductsList(expandedProductsList.map(po => 
         po.id === id ? { ...po, memo } : po
       ));
+      
     } catch (error) {
       console.error('Memo update error:', error);
       setError('メモの更新に失敗しました: ' + (error.response?.data?.detail || error.message));
@@ -565,7 +645,7 @@ const POList = () => {
         
         {/* 表示件数と削除ボタン */}
         <div className="mt-4 flex justify-between items-center">
-          <p className="text-xs text-gray-500">表示件数: {poList.length} / 全{originalData.length}件</p>
+          <p className="text-xs text-gray-500">表示件数: {poList.length} / 全{expandedProductsList.length}件</p>
           
           <div className="flex gap-2 items-center">
             {getSelectedCount() > 0 && (
@@ -617,58 +697,72 @@ const POList = () => {
                   <th className="border p-2">INV No.</th>
                   <th className="border p-2">PO No.</th>
                   <th className="border p-2">顧客</th>
-                  <th className="border p-2">CUT</th>
+                  <th className="border p-2">製品名称</th>
+                  <th className="border p-2">数量(kg)</th>
+                  <th className="border p-2">単価</th>
+                  <th className="border p-2">金額</th>
                   <th className="border p-2">ETD</th>
                   <th className="border p-2">揚げ地</th>
                 </tr>
               </thead>
               <tbody>
                 {getCurrentItems().map((po) => (
-                  <React.Fragment key={po.id}>
+                  <React.Fragment key={`${po.id}-${po.productDetail?.id || 'main'}`}>
                     <tr className={getStatusClass(po.status)}>
                       <td className="border p-2">
-                        <div className="flex items-center">
-                          <input
-                            id={`checkbox-${po.id}`}
-                            type="checkbox"
-                            checked={!!selectedItems[po.id]}
-                            onChange={() => handleCheckboxChange(po.id)}
-                            className="w-4 h-4 text-blue-600 bg-gray-100 border-gray-300 rounded focus:ring-blue-500"
-                          />
-                        </div>
+                        {po.isMainRow && (
+                          <div className="flex items-center">
+                            <input
+                              id={`checkbox-${po.id}`}
+                              type="checkbox"
+                              checked={!!selectedItems[po.id]}
+                              onChange={() => handleCheckboxChange(po.id)}
+                              className="w-4 h-4 text-blue-600 bg-gray-100 border-gray-300 rounded focus:ring-blue-500"
+                            />
+                          </div>
+                        )}
                       </td>
                       <td className="border p-2">
-                        <button 
-                          onClick={() => toggleRowExpand(po.id)} 
-                          className="text-blue-600 hover:text-blue-800"
-                        >
-                          {expandedRows[po.id] ? '▼' : '▶'}
-                        </button>
+                        {po.isMainRow && (
+                          <button 
+                            onClick={() => toggleRowExpand(po.id)} 
+                            className="text-blue-600 hover:text-blue-800"
+                          >
+                            {expandedRows[po.id] ? '▼' : '▶'}
+                          </button>
+                        )}
                       </td>
                       <td className="border p-2">
-                        <select
-                          value={po.status || '手配前'}
-                          onChange={(e) => handleStatusChange(po.id, e.target.value)}
-                          className="border rounded p-1 w-full"
-                        >
-                          <option value="手配前">手配前</option>
-                          <option value="手配中">手配中</option>
-                          <option value="手配済">手配済</option>
-                          <option value="計上済">計上済</option>
-                        </select>
+                        {po.isMainRow ? (
+                          <select
+                            value={po.status || '手配前'}
+                            onChange={(e) => handleStatusChange(po.id, e.target.value)}
+                            className="border rounded p-1 w-full"
+                          >
+                            <option value="手配前">手配前</option>
+                            <option value="手配中">手配中</option>
+                            <option value="手配済">手配済</option>
+                            <option value="計上済">計上済</option>
+                          </select>
+                        ) : (
+                          po.status || '手配前'
+                        )}
                       </td>
                       <td className="border p-2">{po.manager || ""}</td>
                       <td className="border p-2">{po.organization || ""}</td>
                       <td className="border p-2">{po.invoiceNumber || ""}</td>
                       <td className="border p-2">{po.poNumber || ""}</td>
                       <td className="border p-2">{po.customer || ""}</td>
-                      <td className="border p-2">{po.cutOffDate || ""}</td>
+                      <td className="border p-2">{po.productName || ""}</td>
+                      <td className="border p-2">{po.quantity || ""}</td>
+                      <td className="border p-2">{po.unitPrice || ""}</td>
+                      <td className="border p-2">{po.amount || ""}</td>
                       <td className="border p-2">{po.etd || ""}</td>
                       <td className="border p-2">{po.destination || ""}</td>
                     </tr>
-                    {expandedRows[po.id] && (
+                    {expandedRows[po.id] && po.isMainRow && (
                       <tr className={`${getStatusClass(po.status)} text-xs`}>
-                        <td colSpan="11" className="border p-2">
+                        <td colSpan="14" className="border p-2">
                           <div className="grid grid-cols-4 gap-2">
                             <div className="mb-2">
                               <div className="font-bold">取得日:</div>
@@ -685,22 +779,6 @@ const POList = () => {
                             <div className="mb-2">
                               <div className="font-bold">BKG:</div>
                               <div>{po.booking || ""}</div>
-                            </div>
-                            <div className="mb-2">
-                              <div className="font-bold">商品名称:</div>
-                              <div>{po.productName || ""}</div>
-                            </div>
-                            <div className="mb-2">
-                              <div className="font-bold">数量(kg):</div>
-                              <div>{po.quantity || ""}</div>
-                            </div>
-                            <div className="mb-2">
-                              <div className="font-bold">単価:</div>
-                              <div>{po.unitPrice || ""}</div>
-                            </div>
-                            <div className="mb-2">
-                              <div className="font-bold">金額:</div>
-                              <div>{po.amount || ""}</div>
                             </div>
                             <div className="mb-2">
                               <div className="font-bold">通貨:</div>
