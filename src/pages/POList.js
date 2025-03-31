@@ -52,11 +52,11 @@ const POList = () => {
       
       console.log('PO一覧データのレスポンス:', response.data);
       
-      if (response.data && response.data.success && Array.isArray(response.data.data)) {
+      if (response.data && response.data.success && Array.isArray(response.data.po_list)) {
         // 製品ごとに行を作成するための処理を追加
         const expandedList = [];
         
-        response.data.data.forEach(po => {
+        response.data.po_list.forEach(po => {
           // 製品情報を取得するためにAPIを呼び出す
           fetchProductDetails(po.id, token).then(products => {
             if (products.length === 0) {
@@ -96,7 +96,7 @@ const POList = () => {
         });
         
         // データをそのまま保存（バックアップ用）
-        setOriginalData(response.data.data);
+        setOriginalData(response.data.po_list);
       } else {
         console.error('不正なレスポンス形式:', response.data);
         throw new Error('サーバーから正しいデータ形式が返されませんでした');
@@ -288,13 +288,16 @@ const POList = () => {
   // メモ更新ハンドラ
   const handleMemoUpdate = async (id, memo) => {
     try {
+      console.log(`メモ更新開始: ID=${id}, メモ=${memo}`);
+      
       // 認証トークンの取得
       const token = localStorage.getItem('token');
       if (!token) {
         throw new Error('認証トークンが見つかりません。再ログインしてください。');
       }
       
-      await axios.patch(
+      // PUT メソッドを使用してメモを更新
+      const response = await axios.put(
         `${API_URL}/api/po/${id}/memo`, 
         { memo }, 
         {
@@ -305,19 +308,27 @@ const POList = () => {
         }
       );
       
-      // 状態を更新 - 同じPO IDを持つすべての行を更新
-      const updatedList = poList.map(po => 
-        po.id === id ? { ...po, memo } : po
-      );
-      setPOList(updatedList);
-      
-      // 元のデータも更新
-      setExpandedProductsList(expandedProductsList.map(po => 
-        po.id === id ? { ...po, memo } : po
-      ));
+      if (response.data && response.data.success) {
+        console.log("メモ更新成功:", response.data);
+        
+        // 状態を更新 - 同じPO IDを持つすべての行を更新
+        const updatedList = poList.map(po => 
+          po.id === id ? { ...po, memo } : po
+        );
+        setPOList(updatedList);
+        
+        // 元のデータも更新
+        setExpandedProductsList(expandedProductsList.map(po => 
+          po.id === id ? { ...po, memo } : po
+        ));
+      } else {
+        console.error('サーバーからのレスポンス:', response.data);
+        throw new Error('サーバーからエラーレスポンスが返されました');
+      }
       
     } catch (error) {
       console.error('Memo update error:', error);
+      console.error('Error details:', error.response?.data || error.message);
       setError('メモの更新に失敗しました: ' + (error.response?.data?.detail || error.message));
     }
   };
@@ -820,8 +831,9 @@ const POList = () => {
                               <div className="font-bold">メモ:</div>
                               <div 
                                 contentEditable={true}
+                                suppressContentEditableWarning={true}
                                 onBlur={(e) => handleMemoUpdate(po.id, e.target.textContent)}
-                                className="p-1 border min-h-[40px]"
+                                className="p-1 border min-h-[40px] focus:outline-none focus:border-blue-500"
                               >
                                 {po.memo || ""}
                               </div>
