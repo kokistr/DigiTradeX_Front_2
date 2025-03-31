@@ -30,10 +30,15 @@ const POList = () => {
   const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
   const [isDeleting, setIsDeleting] = useState(false);
   
-  // PO一覧データの取得 (初期データロード用)
+  // メモ編集用の状態
+  const [editingMemo, setEditingMemo] = useState(null);
+  const [memoText, setMemoText] = useState("");
+  
+  // PO一覧データの取得 (改善されたバージョン)
   const fetchPOList = async () => {
     try {
       setIsLoading(true);
+      setError('');
       
       // 認証トークンの取得
       const token = localStorage.getItem('token');
@@ -53,50 +58,60 @@ const POList = () => {
       console.log('PO一覧データのレスポンス:', response.data);
       
       if (response.data && response.data.success && Array.isArray(response.data.po_list)) {
-        // 製品ごとに行を作成するための処理を追加
+        // データがない場合の処理
+        if (response.data.po_list.length === 0) {
+          setPOList([]);
+          setExpandedProductsList([]);
+          setOriginalData([]);
+          setIsLoading(false);
+          return;
+        }
+        
+        // 全POの製品情報を並列で取得
+        const productPromises = response.data.po_list.map(po => 
+          fetchProductDetails(po.id, token)
+            .then(products => ({ po, products }))
+            .catch(err => {
+              console.error(`PO ID ${po.id} の製品情報取得エラー:`, err);
+              return { po, products: [] };
+            })
+        );
+        
+        // すべての製品情報取得が完了するのを待つ
+        const results = await Promise.all(productPromises);
+        
+        // 製品ごとに行を作成
         const expandedList = [];
         
-        response.data.po_list.forEach(po => {
-          // 製品情報を取得するためにAPIを呼び出す
-          fetchProductDetails(po.id, token).then(products => {
-            if (products.length === 0) {
-              // 製品情報がない場合は1行だけ表示
+        results.forEach(({ po, products }) => {
+          if (products.length === 0) {
+            // 製品情報がない場合は1行だけ表示
+            expandedList.push({
+              ...po,
+              isMainRow: true,
+              productDetail: null
+            });
+          } else {
+            // 製品ごとに行を作成
+            products.forEach((product, index) => {
               expandedList.push({
                 ...po,
-                isMainRow: true,  // メイン行フラグ
-                productDetail: null // 製品詳細なし
+                isMainRow: index === 0,
+                productDetail: product,
+                productName: product.product_name,
+                quantity: product.quantity,
+                unitPrice: product.unit_price,
+                amount: product.subtotal
               });
-            } else {
-              // 製品ごとに行を作成
-              products.forEach((product, index) => {
-                expandedList.push({
-                  ...po,
-                  isMainRow: index === 0,  // 最初の製品のみメイン行
-                  productDetail: product,
-                  // 製品詳細情報で上書き
-                  productName: product.product_name,
-                  quantity: product.quantity,
-                  unitPrice: product.unit_price,
-                  amount: product.subtotal
-                });
-              });
-            }
-            
-            // 状態を更新
-            setExpandedProductsList(expandedList);
-            setPOList(expandedList);
-            setOriginalData(expandedList);
-            setCurrentPage(1);
-            setIsLoading(false);
-          }).catch(err => {
-            console.error('製品情報取得エラー:', err);
-            setError('製品情報の取得に失敗しました');
-            setIsLoading(false);
-          });
+            });
+          }
         });
         
-        // データをそのまま保存（バックアップ用）
+        // すべてのデータが揃ったら一度に状態を更新
+        setExpandedProductsList(expandedList);
+        setPOList(expandedList);
         setOriginalData(response.data.po_list);
+        
       } else {
         console.error('不正なレスポンス形式:', response.data);
         throw new Error('サーバーから正しいデータ形式が返されませんでした');
@@ -104,6 +119,7 @@ const POList = () => {
     } catch (error) {
       console.error('List fetch error:', error);
       setError('PO一覧の取得に失敗しました: ' + (error.response?.data?.detail || error.message));
+    } finally {
       setIsLoading(false);
     }
   };
@@ -285,21 +301,30 @@ const POList = () => {
     setIsLoading(false);
   };
   
-  // メモ更新ハンドラ
-  const handleMemoUpdate = async (id, memo) => {
+  // メモ編集を開始する関数
+  const startEditingMemo = (poId, initialMemo) => {
+    setEditingMemo(poId);
+    setMemoText(initialMemo || "");
+  };
+  
+  // メモ編集をキャンセルする関数
+  const cancelEditingMemo = () => {
+    setEditingMemo(null);
+    setMemoText("");
+  };
+  
+  // メモを保存する関数
+  const saveMemo = async (poId) => {
     try {
-      console.log(`メモ更新開始: ID=${id}, メモ=${memo}`);
-      
-      // 認証トークンの取得
       const token = localStorage.getItem('token');
       if (!token) {
         throw new Error('認証トークンが見つかりません。再ログインしてください。');
       }
       
-      // PUT メソッドを使用してメモを更新
+      // APIを呼び出してメモを更新
       const response = await axios.put(
-        `${API_URL}/api/po/${id}/memo`, 
-        { memo }, 
+        `${API_URL}/api/po/${poId}/memo`, 
+        { memo: memoText }, 
         {
           headers: {
             'Authorization': `Bearer ${token}`,
@@ -309,27 +334,86 @@ const POList = () => {
       );
       
       if (response.data && response.data.success) {
-        console.log("メモ更新成功:", response.data);
-        
         // 状態を更新 - 同じPO IDを持つすべての行を更新
         const updatedList = poList.map(po => 
-          po.id === id ? { ...po, memo } : po
+          po.id === poId ? { ...po, memo: memoText } : po
         );
         setPOList(updatedList);
         
         // 元のデータも更新
         setExpandedProductsList(expandedProductsList.map(po => 
-          po.id === id ? { ...po, memo } : po
+          po.id === poId ? { ...po, memo: memoText } : po
         ));
+        
+        // 編集モードを終了
+        setEditingMemo(null);
+        setMemoText("");
       } else {
-        console.error('サーバーからのレスポンス:', response.data);
         throw new Error('サーバーからエラーレスポンスが返されました');
       }
-      
     } catch (error) {
       console.error('Memo update error:', error);
-      console.error('Error details:', error.response?.data || error.message);
       setError('メモの更新に失敗しました: ' + (error.response?.data?.detail || error.message));
+    }
+  };
+  
+  // キーボードイベントハンドラ（EnterでSave、EscでCancel）
+  const handleMemoKeyDown = (e, poId) => {
+    // Ctrl+Enter で保存
+    if (e.key === 'Enter' && e.ctrlKey) {
+      e.preventDefault();
+      saveMemo(poId);
+    }
+    // Esc でキャンセル
+    else if (e.key === 'Escape') {
+      e.preventDefault();
+      cancelEditingMemo();
+    }
+  };
+  
+  // 拡張した行のメモ表示/編集コンポーネント
+  const MemoComponent = ({ poId, memo }) => {
+    if (editingMemo === poId) {
+      // 編集モード
+      return (
+        <div className="memo-edit">
+          <textarea
+            className="memo-textarea"
+            value={memoText}
+            onChange={(e) => setMemoText(e.target.value)}
+            onKeyDown={(e) => handleMemoKeyDown(e, poId)}
+            autoFocus
+            placeholder="メモを入力してください"
+          />
+          <div className="memo-buttons">
+            <button
+              className="memo-button memo-cancel"
+              onClick={cancelEditingMemo}
+            >
+              キャンセル
+            </button>
+            <button
+              className="memo-button memo-save"
+              onClick={() => saveMemo(poId)}
+            >
+              保存
+            </button>
+          </div>
+          <div className="memo-tip text-xs text-gray-500 mt-1">
+            Ctrl+Enter: 保存 / Esc: キャンセル
+          </div>
+        </div>
+      );
+    } else {
+      // 表示モード
+      return (
+        <div 
+          className="memo-display"
+          onClick={() => startEditingMemo(poId, memo)}
+        >
+          {memo || <span className="text-gray-400">メモを追加...</span>}
+        </div>
+      );
     }
   };
   
@@ -829,13 +913,8 @@ const POList = () => {
                             </div>
                             <div className="mb-2 col-span-4">
                               <div className="font-bold">メモ:</div>
-                              <div 
-                                contentEditable={true}
-                                suppressContentEditableWarning={true}
-                                onBlur={(e) => handleMemoUpdate(po.id, e.target.textContent)}
-                                className="p-1 border min-h-[40px] focus:outline-none focus:border-blue-500"
-                              >
-                                {po.memo || ""}
+                              <div className="memo-cell expanded-memo">
+                                <MemoComponent poId={po.id} memo={po.memo} />
                               </div>
                             </div>
                           </div>
