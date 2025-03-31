@@ -321,3 +321,89 @@
       flex-wrap: wrap;
     }
   }
+
+/* メモセル */
+.memo-cell {
+  min-width: 150px;
+  position: relative;
+}
+
+/* メモ表示部分 */
+.memo-display {
+  min-height: 24px;
+  padding: 4px;
+  cursor: pointer;
+  white-space: pre-wrap;
+  word-break: break-word;
+}
+
+.memo-display:hover {
+  background-color: #f0f4ff;
+}
+
+/* メモ編集モード */
+.memo-edit {
+  display: flex;
+  flex-direction: column;
+}
+
+/* メモ編集用テキストエリア */
+.memo-textarea {
+  width: 100%;
+  min-height: 60px;
+  padding: 4px;
+  border: 1px solid #4a69bd;
+  border-radius: 4px;
+  resize: vertical;
+  font-family: inherit;
+  font-size: 14px;
+}
+
+.memo-textarea:focus {
+  outline: none;
+  box-shadow: 0 0 0 2px rgba(74, 105, 189, 0.3);
+}
+
+/* メモ編集ボタンコンテナ */
+.memo-buttons {
+  display: flex;
+  justify-content: flex-end;
+  margin-top: 4px;
+  gap: 4px;
+}
+
+/* メモ編集ボタン */
+.memo-button {
+  padding: 2px 8px;
+  font-size: 12px;
+  border-radius: 4px;
+  cursor: pointer;
+  border: none;
+}
+
+.memo-save {
+  background-color: #4a69bd;
+  color: white;
+}
+
+.memo-save:hover {
+  background-color: #3a5795;
+}
+
+.memo-cancel {
+  background-color: #e0e0e0;
+  color: #616161;
+}
+
+.memo-cancel:hover {
+  background-color: #d0d0d0;
+}
+
+/* 展開済みの行のメモ欄 */
+.expanded-memo {
+  margin-top: 8px;
+  border: 1px solid #e0e0e0;
+  border-radius: 4px;
+  padding: 8px;
+  background-color: #f9f9f9;
+}
