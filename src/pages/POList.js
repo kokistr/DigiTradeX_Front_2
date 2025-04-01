@@ -33,6 +33,8 @@ const POList = () => {
   // メモ編集用の状態
   const [editingMemo, setEditingMemo] = useState(null);
   const [memoText, setMemoText] = useState("");
+  // 保存中状態の管理
+  const [isSavingMemo, setIsSavingMemo] = useState(false);
   
   // PO一覧データの取得 (改善されたバージョン)
   const fetchPOList = async () => {
@@ -303,19 +305,29 @@ const POList = () => {
   
   // メモ編集を開始する関数
   const startEditingMemo = (poId, initialMemo) => {
+    // 既に編集中のメモがある場合は保存せずにキャンセル
+    if (editingMemo !== null && editingMemo !== poId) {
+      cancelEditingMemo();
+    }
+  
     setEditingMemo(poId);
     setMemoText(initialMemo || "");
   };
-  
+
   // メモ編集をキャンセルする関数
   const cancelEditingMemo = () => {
     setEditingMemo(null);
     setMemoText("");
   };
-  
-  // メモを保存する関数
+
+  // メモを保存する関数 - 防止機能付き
   const saveMemo = async (poId) => {
+    // すでに保存中なら処理をスキップ
+    if (isSavingMemo) return;
+    
     try {
+      setIsSavingMemo(true); // 保存中フラグをセット
+      
       const token = localStorage.getItem('token');
       if (!token) {
         throw new Error('認証トークンが見つかりません。再ログインしてください。');
@@ -354,6 +366,8 @@ const POList = () => {
     } catch (error) {
       console.error('Memo update error:', error);
       setError('メモの更新に失敗しました: ' + (error.response?.data?.detail || error.message));
+    } finally {
+      setIsSavingMemo(false); // 保存中フラグを解除
     }
   };
   
@@ -384,19 +398,22 @@ const POList = () => {
             onKeyDown={(e) => handleMemoKeyDown(e, poId)}
             autoFocus
             placeholder="メモを入力してください"
+            disabled={isSavingMemo} // 保存中は無効化
           />
           <div className="memo-buttons">
             <button
               className="memo-button memo-cancel"
               onClick={cancelEditingMemo}
+              disabled={isSavingMemo} // 保存中は無効化
             >
               キャンセル
             </button>
             <button
               className="memo-button memo-save"
               onClick={() => saveMemo(poId)}
+              disabled={isSavingMemo} // 保存中は無効化
             >
-              保存
+              {isSavingMemo ? '保存中...' : '保存'}
             </button>
           </div>
           <div className="memo-tip text-xs text-gray-500 mt-1">
@@ -415,7 +432,7 @@ const POList = () => {
         </div>
       );
     }
-  };
+  }; 
   
   // 現在のページに表示するデータ取得
   const getCurrentItems = () => {
