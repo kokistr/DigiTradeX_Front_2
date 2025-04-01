@@ -412,31 +412,47 @@ const POList = () => {
   
   // 拡張した行のメモ表示/編集コンポーネント
   const MemoComponent = ({ poId, memo }) => {
+    // テキストエリア用のrefを作成
+    const textareaRef = useRef(null);
+    
+    // テキストエリアにフォーカスが当たったときにカーソルを末尾に配置する
+    useEffect(() => {
+      if (editingMemo === poId && textareaRef.current) {
+        // setTimeout を使用して、レンダリング完了後に実行されるようにする
+        setTimeout(() => {
+          const textLength = textareaRef.current.value.length;
+          textareaRef.current.focus();
+          textareaRef.current.setSelectionRange(textLength, textLength);
+        }, 0);
+      }
+    }, [editingMemo, poId]);
+    
     if (editingMemo === poId) {
       // 編集モード
       return (
         <div className="memo-edit">
           <textarea
+            ref={textareaRef}
             className="memo-textarea"
             value={memoText}
             onChange={(e) => setMemoText(e.target.value)}
             onKeyDown={(e) => handleMemoKeyDown(e, poId)}
-            autoFocus
             placeholder="メモを入力してください"
-            disabled={isSavingMemo} // 保存中は無効化
+            disabled={isSavingMemo}
+            dir="ltr" // 左から右への入力を強制
           />
           <div className="memo-buttons">
             <button
               className="memo-button memo-cancel"
               onClick={cancelEditingMemo}
-              disabled={isSavingMemo} // 保存中は無効化
+              disabled={isSavingMemo}
             >
               キャンセル
             </button>
             <button
               className="memo-button memo-save"
               onClick={() => saveMemo(poId)}
-              disabled={isSavingMemo} // 保存中は無効化
+              disabled={isSavingMemo}
             >
               {isSavingMemo ? '保存中...' : '保存'}
             </button>
@@ -451,7 +467,7 @@ const POList = () => {
       return (
         <div 
           className="memo-display"
-          onClick={() => !isSavingMemo && startEditingMemo(poId, memo)} // 保存中は無効化
+          onClick={() => !isSavingMemo && startEditingMemo(poId, memo)}
         >
           {memo || <span className="text-gray-400">メモを追加...</span>}
         </div>
