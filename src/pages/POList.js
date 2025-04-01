@@ -1,5 +1,5 @@
 // src/pages/POList.js
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
 import axios from 'axios';
 import { API_URL } from '../config';
@@ -35,6 +35,9 @@ const POList = () => {
   const [memoText, setMemoText] = useState("");
   // 保存中状態の管理
   const [isSavingMemo, setIsSavingMemo] = useState(false);
+  
+  // 最後のリクエストタイムスタンプを保持するRef
+  const lastSaveRequestRef = useRef(0);
   
   // PO一覧データの取得 (改善されたバージョン)
   const fetchPOList = async () => {
@@ -303,30 +306,47 @@ const POList = () => {
     setIsLoading(false);
   };
   
-  // メモ編集を開始する関数
+  // メモ編集を開始する関数 - 編集中の他のメモがあったら終了させる
   const startEditingMemo = (poId, initialMemo) => {
     // 既に編集中のメモがある場合は保存せずにキャンセル
     if (editingMemo !== null && editingMemo !== poId) {
       cancelEditingMemo();
     }
-  
+    
+    // 保存中なら何もしない
+    if (isSavingMemo) return;
+    
     setEditingMemo(poId);
     setMemoText(initialMemo || "");
   };
-
+  
   // メモ編集をキャンセルする関数
   const cancelEditingMemo = () => {
+    // 保存中なら何もしない
+    if (isSavingMemo) return;
+    
     setEditingMemo(null);
     setMemoText("");
   };
-
-  // メモを保存する関数 - 防止機能付き
+  
+  // メモを保存する関数 - デバウンスとリクエスト重複防止つき
   const saveMemo = async (poId) => {
     // すでに保存中なら処理をスキップ
     if (isSavingMemo) return;
     
+    // 空のメモの場合はスペースを入れる（モックデータ対策）
+    const memoContent = memoText.trim() === "" ? " " : memoText;
+    
+    // リクエスト重複チェック - 300ms以内の同じリクエストはスキップ
+    const now = Date.now();
+    if (now - lastSaveRequestRef.current < 300) {
+      console.log('リクエスト頻度が高すぎます。スキップします。');
+      return;
+    }
+    lastSaveRequestRef.current = now;
+    
     try {
-      setIsSavingMemo(true); // 保存中フラグをセット
+      setIsSavingMemo(true);
       
       const token = localStorage.getItem('token');
       if (!token) {
@@ -336,7 +356,7 @@ const POList = () => {
       // APIを呼び出してメモを更新
       const response = await axios.put(
         `${API_URL}/api/po/${poId}/memo`, 
-        { memo: memoText }, 
+        { memo: memoContent }, 
         {
           headers: {
             'Authorization': `Bearer ${token}`,
@@ -346,15 +366,17 @@ const POList = () => {
       );
       
       if (response.data && response.data.success) {
+        console.log("メモ更新成功:", response.data);
+        
         // 状態を更新 - 同じPO IDを持つすべての行を更新
         const updatedList = poList.map(po => 
-          po.id === poId ? { ...po, memo: memoText } : po
+          po.id === poId ? { ...po, memo: memoContent } : po
         );
         setPOList(updatedList);
         
         // 元のデータも更新
         setExpandedProductsList(expandedProductsList.map(po => 
-          po.id === poId ? { ...po, memo: memoText } : po
+          po.id === poId ? { ...po, memo: memoContent } : po
         ));
         
         // 編集モードを終了
@@ -367,7 +389,10 @@ const POList = () => {
       console.error('Memo update error:', error);
       setError('メモの更新に失敗しました: ' + (error.response?.data?.detail || error.message));
     } finally {
-      setIsSavingMemo(false); // 保存中フラグを解除
+      // 少し遅延を入れて連打防止
+      setTimeout(() => {
+        setIsSavingMemo(false);
+      }, 500);
     }
   };
   
@@ -426,13 +451,13 @@ const POList = () => {
       return (
         <div 
           className="memo-display"
-          onClick={() => startEditingMemo(poId, memo)}
+          onClick={() => !isSavingMemo && startEditingMemo(poId, memo)} // 保存中は無効化
         >
           {memo || <span className="text-gray-400">メモを追加...</span>}
         </div>
       );
     }
-  }; 
+  };
   
   // 現在のページに表示するデータ取得
   const getCurrentItems = () => {
@@ -488,7 +513,7 @@ const POList = () => {
       // 選択されたIDのリストを作成
       const idsToDelete = Object.entries(selectedItems)
         .filter(([_, isSelected]) => isSelected)
-        .map(([id, _]) => id);
+        .map(([id, _]) => parseInt(id)); // 文字列から数値に変換
       
       console.log('削除するPO:', idsToDelete);
       
