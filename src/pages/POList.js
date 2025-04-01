@@ -144,7 +144,6 @@ const POList = () => {
       }
       
       // API未実装の場合のモック対応
-      // 実際の実装ではこの部分は削除し、バックエンドAPIを実装すること
       console.warn('製品詳細APIが未実装のため、モックデータを使用します');
       // POの製品名をカンマで分割して簡易的に製品リストを作成
       if (originalData && originalData.length > 0) {
@@ -165,7 +164,7 @@ const POList = () => {
       return [];
     } catch (error) {
       console.error('製品詳細取得エラー:', error);
-      // モックデータを返す（実際の実装では適切なエラーハンドリングを行うこと）
+      // モックデータを返す
       return [];
     }
   };
@@ -317,7 +316,8 @@ const POList = () => {
     if (isSavingMemo) return;
     
     setEditingMemo(poId);
-    setMemoText(initialMemo || "");
+    // 明示的に新しい文字列インスタンスを作成
+    setMemoText(initialMemo ? String(initialMemo) : "");
   };
   
   // メモ編集をキャンセルする関数
@@ -337,7 +337,7 @@ const POList = () => {
     // 空のメモの場合はスペースを入れる（モックデータ対策）
     const memoContent = memoText.trim() === "" ? " " : memoText;
     
-    // リクエスト重複チェック - 300ms以内の同じリクエストはスキップ
+    // リクエスト重複チェック 
     const now = Date.now();
     if (now - lastSaveRequestRef.current < 300) {
       console.log('リクエスト頻度が高すぎます。スキップします。');
@@ -416,14 +416,21 @@ const POList = () => {
     const textareaRef = useRef(null);
     
     // テキストエリアにフォーカスが当たったときにカーソルを末尾に配置する
+    // MemoComponent内のuseEffectフックを修正
     useEffect(() => {
       if (editingMemo === poId && textareaRef.current) {
-        // setTimeout を使用して、レンダリング完了後に実行されるようにする
-        setTimeout(() => {
-          const textLength = textareaRef.current.value.length;
-          textareaRef.current.focus();
-          textareaRef.current.setSelectionRange(textLength, textLength);
-        }, 0);
+        // setTimeout でレンダリング完了後に実行
+        const timeoutId = setTimeout(() => {
+          const textarea = textareaRef.current;
+          if (textarea) {
+            textarea.focus();
+            // カーソルを末尾に設定
+            const length = textarea.value.length;
+            textarea.setSelectionRange(length, length);
+          }
+        }, 10); // 少し長めの遅延を設定
+        
+        return () => clearTimeout(timeoutId); // クリーンアップ
       }
     }, [editingMemo, poId]);
     
@@ -435,7 +442,10 @@ const POList = () => {
             ref={textareaRef}
             className="memo-textarea"
             value={memoText}
-            onChange={(e) => setMemoText(e.target.value)}
+            onChange={(e) => {
+              const newValue = e.target.value;
+              setMemoText(newValue);
+            }}
             onKeyDown={(e) => handleMemoKeyDown(e, poId)}
             placeholder="メモを入力してください"
             disabled={isSavingMemo}
