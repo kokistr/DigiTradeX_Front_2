@@ -1,3 +1,6 @@
+入力の問題を解消するために、MemoComponentを完全に修正します。親コンポーネントの状態との分離を行い、ローカルの状態管理を導入します：
+
+```javascript
 // src/pages/POList.js
 import React, { useState, useEffect, useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
@@ -315,9 +318,9 @@ const POList = () => {
     // 保存中なら何もしない
     if (isSavingMemo) return;
     
+    // 編集対象のPO IDのみを設定（メモの内容はコンポーネント内部で管理）
     setEditingMemo(poId);
-    // 明示的に新しい文字列インスタンスを作成
-    setMemoText(initialMemo ? String(initialMemo) : "");
+    setMemoText(initialMemo || ""); // 初期値を設定
   };
   
   // メモ編集をキャンセルする関数
@@ -330,12 +333,13 @@ const POList = () => {
   };
   
   // メモを保存する関数 - デバウンスとリクエスト重複防止つき
-  const saveMemo = async (poId) => {
+  const saveMemo = async (poId, updatedText) => {
     // すでに保存中なら処理をスキップ
     if (isSavingMemo) return;
     
     // 空のメモの場合はスペースを入れる（モックデータ対策）
-    const memoContent = memoText.trim() === "" ? " " : memoText;
+    // ローカルstate経由で取得せず、パラメータで直接受け取る
+    const memoContent = updatedText.trim() === "" ? " " : updatedText;
     
     // リクエスト重複チェック 
     const now = Date.now();
@@ -396,78 +400,86 @@ const POList = () => {
     }
   };
   
-  // キーボードイベントハンドラ（EnterでSave、EscでCancel）
-  const handleMemoKeyDown = (e, poId) => {
-    // Ctrl+Enter で保存
-    if (e.key === 'Enter' && e.ctrlKey) {
-      e.preventDefault();
-      saveMemo(poId);
-    }
-    // Esc でキャンセル
-    else if (e.key === 'Escape') {
-      e.preventDefault();
-      cancelEditingMemo();
-    }
-  };
-  
   // 拡張した行のメモ表示/編集コンポーネント
   const MemoComponent = ({ poId, memo }) => {
     // テキストエリア用のrefを作成
     const textareaRef = useRef(null);
     
-    // テキストエリアにフォーカスが当たったときにカーソルを末尾に配置する
-    // MemoComponent内のuseEffectフックを修正
+    // コンポーネント内部で一時的にメモテキストを管理
+    const [localMemoText, setLocalMemoText] = useState("");
+    
+    // 初期値の設定 - 編集モード開始時に一度だけ実行
     useEffect(() => {
-      if (editingMemo === poId && textareaRef.current) {
-        // setTimeout でレンダリング完了後に実行
-        const timeoutId = setTimeout(() => {
-          const textarea = textareaRef.current;
-          if (textarea) {
+      if (editingMemo === poId) {
+        // 親コンポーネントから初期値を取得してローカル状態を初期化
+        setLocalMemoText(memo || "");
+        
+        // フォーカスとカーソル位置の設定
+        setTimeout(() => {
+          if (textareaRef.current) {
+            const textarea = textareaRef.current;
             textarea.focus();
-            // カーソルを末尾に設定
             const length = textarea.value.length;
             textarea.setSelectionRange(length, length);
           }
-        }, 10); // 少し長めの遅延を設定
-        
-        return () => clearTimeout(timeoutId); // クリーンアップ
+        }, 50);
       }
-    }, [editingMemo, poId]);
+    }, [editingMemo, poId, memo]);
+    
+    // 保存処理 - ローカル状態を親コンポーネントに渡して保存
+    const handleSave = () => {
+      saveMemo(poId, localMemoText);
+    };
+    
+    // キャンセル処理
+    const handleCancel = () => {
+      setLocalMemoText(""); // ローカル状態をリセット
+      cancelEditingMemo();
+    };
+    
+    // キーボードイベントハンドラ
+    const handleKeyDown = (e) => {
+      if (e.key === 'Enter' && e.ctrlKey) {
+        e.preventDefault();
+        handleSave();
+      } else if (e.key === 'Escape') {
+        e.preventDefault();
+        handleCancel();
+      }
+    };
     
     if (editingMemo === poId) {
-      // 編集モード
+      // 編集モード - ローカル状態を使用
       return (
         <div className="memo-edit">
           <textarea
             ref={textareaRef}
-            className="memo-textarea"
-            value={memoText}
-            onChange={(e) => {
-              const newValue = e.target.value;
-              setMemoText(newValue);
-            }}
-            onKeyDown={(e) => handleMemoKeyDown(e, poId)}
+            className="memo-textarea w-full p-2 border rounded"
+            value={localMemoText}
+            onChange={(e) => setLocalMemoText(e.target.value)}
+            onKeyDown={handleKeyDown}
             placeholder="メモを入力してください"
             disabled={isSavingMemo}
-            dir="ltr" // 左から右への入力を強制
+            dir="ltr"
+            rows="3"
           />
-          <div className="memo-buttons">
+          <div className="flex mt-2 space-x-2">
             <button
-              className="memo-button memo-cancel"
-              onClick={cancelEditingMemo}
+              className="px-2 py-1 bg-gray-300 text-gray-700 rounded text-sm"
+              onClick={handleCancel}
               disabled={isSavingMemo}
             >
               キャンセル
             </button>
             <button
-              className="memo-button memo-save"
-              onClick={() => saveMemo(poId)}
+              className="px-2 py-1 bg-blue-500 text-white rounded text-sm"
+              onClick={handleSave}
               disabled={isSavingMemo}
             >
               {isSavingMemo ? '保存中...' : '保存'}
             </button>
           </div>
-          <div className="memo-tip text-xs text-gray-500 mt-1">
+          <div className="text-xs text-gray-500 mt-1">
             Ctrl+Enter: 保存 / Esc: キャンセル
           </div>
         </div>
@@ -476,7 +488,7 @@ const POList = () => {
       // 表示モード
       return (
         <div 
-          className="memo-display"
+          className="memo-display p-2 hover:bg-gray-100 rounded cursor-pointer"
           onClick={() => !isSavingMemo && startEditingMemo(poId, memo)}
         >
           {memo || <span className="text-gray-400">メモを追加...</span>}
