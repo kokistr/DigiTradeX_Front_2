@@ -1,6 +1,3 @@
-入力の問題を解消するために、MemoComponentを完全に修正します。親コンポーネントの状態との分離を行い、ローカルの状態管理を導入します：
-
-```javascript
 // src/pages/POList.js
 import React, { useState, useEffect, useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
